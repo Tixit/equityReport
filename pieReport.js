@@ -256,11 +256,11 @@ function mergePeople(a,b) {
 
             // b starts before a
             if(bFrom.isBefore(aFrom) && curTime.isBefore(aFrom)) {
-                overlappingItem(b[bn], aFrom)
+                overlappingItem(b[bn], a[an].from)
 
             // a starts before b
             } else if(aFrom.isBefore(bFrom) && curTime.isBefore(bFrom)) {
-                overlappingItem(a[an], bFrom)
+                overlappingItem(a[an], b[bn].from)
 
             // start at same time
             } else {
