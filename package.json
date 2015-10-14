@@ -1,7 +1,7 @@
 {"name":"pieReport",
  "version":"0.0.1",
  "main":"pieReport.js",
- "description": "Generate an html page reporting company and individual equity statistics.",
+ "description": "Data processing for dynamic equity system .",
  "keywords": [
     "pie", "equity", "shares", "stock", "report", "graph", "chart"
  ],
