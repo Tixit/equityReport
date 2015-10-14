@@ -1,0 +1,18 @@
+{"name":"pieReport",
+ "version":"0.0.1",
+ "main":"pieReport.js",
+ "description": "Generate an html page reporting company and individual equity statistics.",
+ "keywords": [
+    "pie", "equity", "shares", "stock", "report", "graph", "chart"
+ ],
+ "dependencies":{
+     "moment": ""
+ },
+ "devDependencies": {
+     "deadunit": ""
+ },
+ "repository": {
+   "type": "git",
+   "url": "git://github.com/Tixit/pieReport"
+ }
+}
