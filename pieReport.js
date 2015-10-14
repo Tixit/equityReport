@@ -330,7 +330,7 @@ function mergePeople(a,b) {
         itemBefore.from = curTime.format('YYYY-MM-DD')
         itemBefore.to = to
         results.push(itemBefore)
-        curTime = momen(x.to)
+        curTime = moment(x.to)
     }
 }
 
