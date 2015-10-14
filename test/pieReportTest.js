@@ -3,7 +3,7 @@
 var Unit = require('deadunit')
 var pie = require('../pieReport')
 
-Unit.test("Testing odiff", function() {
+Unit.test("Testing pieReport", function() {
 
     //*
 
