@@ -241,7 +241,7 @@ function mergePeople(a,b) {
         var aFrom = moment(a[an].from), aTo = moment(a[an].to)
         var bFrom = moment(b[bn].from), bTo = moment(b[bn].to)
 
-        // b range is before a's range
+        // b's range is before a's range
         if( ! bTo.isAfter(aFrom)) {
             nonOverlappingItem(b[bn])
             bn++
@@ -256,11 +256,11 @@ function mergePeople(a,b) {
 
             // b starts before a
             if(bFrom.isBefore(aFrom) && curTime.isBefore(aFrom)) {
-                overlappingItem(b[bn], a[an].from)
+                overlappingItem(b[bn], a[an])
 
             // a starts before b
             } else if(aFrom.isBefore(bFrom) && curTime.isBefore(bFrom)) {
-                overlappingItem(a[an], b[bn].from)
+                overlappingItem(a[an], b[bn])
 
             // start at same time
             } else {
@@ -324,13 +324,14 @@ function mergePeople(a,b) {
         curTime = moment(x.to)
     }
 
-    function overlappingItem(x, to) {
+    function overlappingItem(x, y) {
         var itemBefore = copy(x)
-        itemBefore.D = 0 // D is added in elsewhere
+        x.D = 0 // don't duplicate the investment (note that this mutates the input, todo: fix this)
+        //itemBefore.D = 0 // D is added in elsewhere
         itemBefore.from = curTime.format('YYYY-MM-DD')
-        itemBefore.to = to
+        itemBefore.to = y.from
         results.push(itemBefore)
-        curTime = moment(x.to)
+        curTime = moment(y.from)
     }
 }
 

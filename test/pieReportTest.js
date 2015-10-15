@@ -2,12 +2,13 @@
 
 var Unit = require('deadunit')
 var pie = require('../pieReport')
+var moment = require("moment")
 
 Unit.test("Testing pieReport", function() {
 
+
+
     //*
-
-
 
     this.test("normalizePersonalEquity", function() {
         var N = {
@@ -71,14 +72,17 @@ Unit.test("Testing pieReport", function() {
 //        this.log(person2)
 
         var result = pie.total([person1, person2])
-        this.ok(equal(result, [
-            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, N: 100, D:0},
-            {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5, N: 100, D:0},
-            {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5, N: 100, D:2000},
-            {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, N: 100, D:0},
-            {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, N: 25, D:0},
-            {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2, N: 25, D:0}
-        ]), result)
+
+        this.eq(result.length, 6)
+
+        var index = 0
+        this.ok(equal(result[index], {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, N: 100, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5, N: 100, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5, N: 100, D:2000}),result[index]);index++
+
+        this.ok(equal(result[index], {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, N: 100, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, N: 25, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2, N: 25, D:0}),result[index]);index++
     })
 
     this.test("newMemberTransform", function() {
@@ -99,7 +103,7 @@ Unit.test("Testing pieReport", function() {
         this.ok(equal(newData[4], {from: "2015-10-31", to: "2015-11-08", S: 100*1000*.9, W:.5, N: 25, D:0}))
         this.ok(equal(newData[5], {from: "2015-11-08", to: "2015-11-09", S: 100*1000*.9, W:.5, N: 25, D:1000}))
         this.ok(equal(newData[6], {from: "2015-11-09", to: "2015-11-15", S: 100*1000, W:.5, N: 25, D:0}))
-        this.log(newData)
+        //this.log(newData)
 
     })
 
@@ -137,6 +141,29 @@ Unit.test("Testing pieReport", function() {
 
         var result = pie.sumManHours(data, '2015-10-05', '2015-11-13')
         this.eq(result, 6+1.5*10+1.5*11 +.75*5 +.75*5+2*2)
+    })
+
+    this.test("former bugs", function() {
+        this.test("total - negative date range", function(t) {
+
+            var personData = [
+                [   { from: '2014-01-01',S: 138,W: 0.25,D: 0,to: '2014-01-16',N: 100 },
+                    { from: '2014-01-16',S: 173,W: 0.25,D: 0,to: '2014-01-31',N: 100 },
+                    { from: '2014-01-31',S: 345,W: 0.25,D: 20,to: '2015-10-14',N: 100 }
+                ],[
+                    { from: '2015-02-19',S: 44000,W: 0.125,D: 0,to: '2015-03-06',N: 100 },
+                    { from: '2015-03-06',S: 88000,W: 0.125,D: 0,to: '2015-05-05',N: 100 },
+                    { from: '2015-05-05',S: 110000,W: 0.125,D: 0,to: '2015-10-14',N: 100 }
+                ]
+            ]
+
+            var results = pie.total(personData)
+            results.forEach(function(result) {
+                if(moment(result.to).isBefore(moment(result.from))) {
+                    t.ok(false)
+                }
+            })
+        })
     })
 
     //*/
