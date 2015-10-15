@@ -157,7 +157,7 @@ exports.sumShares = function(normalizedEquity, _from, _to) {
         var itemTo = moment(item.to)
         var itemFrom = moment(item.from)
 
-        if(!itemTo.isBefore(from) && !itemFrom.isAfter(to)) { // if its in range
+        if(itemFrom.isBefore(to) && (itemTo.isAfter(from) || itemTo.isSame(from))) { // if its in range
             var includeInvestment = true
             if(itemFrom.isBefore(from)) {
                 itemFrom = from
@@ -211,6 +211,32 @@ exports.sharesPerDollar = function(N) {
     return N/.6
 }
 
+// returns the normalizedEquity object with a couple additional fields:
+    // runningTotal - A running sum of the equity
+    // runningFracion - A running fraction of the equity (a number between 0 and 1)
+// normalizedEquity - A list of normalized personal equity objects (as returned from normalizePersonalEquity)
+// totals - A normalizedEquity of the total equity earnings of the company
+exports.summary = function(normalizedEquity, totals) {
+    var result = []
+
+    var runningTotal = 0
+    for(var n=0; n<normalizedEquity.length; n++) {
+        var item = normalizedEquity[n]
+        var start = moment(item.from), end = moment(item.to)
+        var days = subtractMoments(end,start)
+
+        var shares = calculateShares(days, item, true)
+        runningTotal+= shares
+        var companyRunningTotal = exports.sumShares(totals, normalizedEquity[0].from, item.to)
+
+        var resultItem = copy(item)
+        resultItem.runningTotal = runningTotal
+        resultItem.runningFraction = runningTotal/companyRunningTotal
+        result.push(resultItem)
+    }
+
+    return result
+}
 
 
 function calculateShares(days, data, includeDollars) {
@@ -291,11 +317,13 @@ function mergePeople(a,b) {
                     var increment = 'both'
                 }
 
+                var totalW = a[an].W+b[bn].W
+
                 // combine parts that overlap
                 var totalItem = {
                     from: curTime.format('YYYY-MM-DD'), to: overlapEnd.format('YYYY-MM-DD'),
                     N: a[an].N,               // should be same for both a and b, so this is arbitrary
-                    S: (a[an].S+b[bn].S)/2,   // average
+                    S: a[an].S*(a[an].W/totalW) + b[bn].S*(b[bn].W/totalW),   // weighted average
                     W: a[an].W+b[bn].W,   // total
                     D: D,
                 }

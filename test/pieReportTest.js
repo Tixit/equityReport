@@ -4,6 +4,8 @@ var Unit = require('deadunit')
 var pie = require('../pieReport')
 var moment = require("moment")
 
+var k=1000
+
 Unit.test("Testing pieReport", function() {
 
 
@@ -77,12 +79,16 @@ Unit.test("Testing pieReport", function() {
 
         var index = 0
         this.ok(equal(result[index], {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, N: 100, D:0}),result[index]);index++
-        this.ok(equal(result[index], {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5, N: 100, D:0}),result[index]);index++
-        this.ok(equal(result[index], {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5, N: 100, D:2000}),result[index]);index++
 
-        this.ok(equal(result[index], {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, N: 100, D:0}),result[index]);index++
-        this.ok(equal(result[index], {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, N: 25, D:0}),result[index]);index++
-        this.ok(equal(result[index], {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2, N: 25, D:0}),result[index]);index++
+        var itemEquityTotal = result[index].N*result[index].S/365*result[index].W*10
+        var itemEquitySum =  100*(100*k/365*0.5*10 + 50*k/365*1*10)
+        this.ok(itemEquitySum -.0001 <= itemEquityTotal&&itemEquityTotal <= itemEquitySum +.0001) // it should be really close
+        this.ok(equal(result[index], {from: "2015-10-11", to: "2015-10-21", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, N: 100, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-10-21", to: "2015-11-01", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, N: 100, D:2000}),result[index]);index++
+
+        this.ok(equal(result[index], {from: "2015-11-01", to: "2015-11-06", S: 100*k*(0.5/0.75) + 50*k*(0.25/0.75), W:0.75, N: 100, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-11-06", to: "2015-11-11", S: 100*k*(0.5/0.75) + 50*k*(0.25/0.75), W:0.75, N: 25, D:0}),result[index]);index++
+        this.ok(equal(result[index], {from: "2015-11-11", to: "2015-11-15", S: 100*k*(1/2) + 50*k*(1/2), W:2, N: 25, D:0}),result[index]);index++
     })
 
     this.test("newMemberTransform", function() {
@@ -141,6 +147,56 @@ Unit.test("Testing pieReport", function() {
 
         var result = pie.sumManHours(data, '2015-10-05', '2015-11-13')
         this.eq(result, 6+1.5*10+1.5*11 +.75*5 +.75*5+2*2)
+    })
+
+    this.test("summary", function(t) {
+        var N = {
+            '2015-10-01': 100,
+            '2015-11-06': 25
+        }
+        var personOne = {
+            '2015-10-01': {S:100*1000, W:1},    // nonexistent in personTwo
+            '2015-10-11': {W:.5},               // identical range in personTwo
+            '2015-10-21': {D: 1000},
+            '2015-11-11': {W: 1}
+        }
+        var personTwo = {
+            '2015-10-11': {S:50*1000, W:1},
+            '2015-10-21': {D: 1000},
+            '2015-11-01': {W:.25},              // range starts the same, but ends different from personTwo
+            '2015-11-11': {W: 1}                // range ends the same, but starts different from personTwo
+        }
+
+        // 10-01 - 10-11, 10-11 - 10-21, 10-21 - 11-01, 11-01 - 11-06, 11-06 - 11-11, 11-11 - 11-15
+
+        var person1 = pie.normalizePersonalEquity(N, personOne, '2015-11-15')
+        var person2 = pie.normalizePersonalEquity(N, personTwo, '2015-11-15')
+        var totals = pie.total([person1, person2])
+
+        var result = pie.summary(person1, totals)
+
+        var total1A = 100*k/365*100*10
+        var fraction1A = 1
+        var total1B = total1A+100*k/365*100*10*.5, total2B = 50*k/365*100*10
+        var fraction1B = total1B/(total1B+total2B)
+        var total1C = total1B+100*k/365*100*15*.5+100*1000/.6, total2C = total2B + 50*k/365*100*11 + 100*1000/.6 + 50*k/365*100*4*.25
+        var fraction1C = total1C/(total1C+total2C)
+        var total1D = total1C + 100*k/365*25*5*.5, total2D = total2C + 50*k/365*25*5*.25
+        var fraction1D = total1D/(total1D+total2D)
+        var total1E = total1D + 100*k/365*25*4, total2E = total2D + 50*k/365*25*4
+        var fraction1E = total1E/(total1E+total2E)
+
+        var item = function(item) {
+            t.ok(equal(result[index], item), result[index], item); index++
+        }
+
+        this.eq(result.length, 5)
+        var index = 0
+        item({from: "2015-10-01", to: "2015-10-11", S: 100*k, W:1, N: 100, D:0, runningTotal:total1A, runningFraction: fraction1A})
+        item({from: "2015-10-11", to: "2015-10-21", S: 100*k, W:.5, N: 100, D:0, runningTotal:total1B, runningFraction: fraction1B})
+        item({from: "2015-10-21", to: "2015-11-06", S: 100*k, W:.5, N: 100, D:1000, runningTotal:total1C, runningFraction: fraction1C})
+        item({from: "2015-11-06", to: "2015-11-11", S: 100*k, W:.5, N: 25, D:0, runningTotal:total1D, runningFraction: fraction1D})
+        item({from: "2015-11-11", to: "2015-11-15", S: 100*k, W:1, N: 25, D:0, runningTotal:total1E, runningFraction: fraction1E})
     })
 
     this.test("former bugs", function() {
