@@ -227,7 +227,7 @@ exports.summary = function(normalizedEquity, totals) {
 
         var shares = calculateShares(days, item, true)
         runningTotal+= shares
-        var companyRunningTotal = exports.sumShares(totals, normalizedEquity[0].from, item.to)
+        var companyRunningTotal = exports.sumShares(totals, totals[0].from, item.to)
 
         var resultItem = copy(item)
         resultItem.runningTotal = runningTotal
