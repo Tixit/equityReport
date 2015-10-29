@@ -220,6 +220,7 @@ exports.summary = function(normalizedEquity, totals) {
     var result = []
 
     var runningTotal = 0
+    var companyRunningTotal = 0, companyTotaledTil = totals[0].from
     for(var n=0; n<normalizedEquity.length; n++) {
         var item = normalizedEquity[n]
         var start = moment(item.from), end = moment(item.to)
@@ -227,7 +228,8 @@ exports.summary = function(normalizedEquity, totals) {
 
         var shares = calculateShares(days, item, true)
         runningTotal+= shares
-        var companyRunningTotal = exports.sumShares(totals, totals[0].from, item.to)
+        companyRunningTotal += exports.sumShares(totals, companyTotaledTil, item.to)
+        companyTotaledTil = item.to
 
         var resultItem = copy(item)
         resultItem.runningTotal = runningTotal
