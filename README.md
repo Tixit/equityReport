@@ -4,6 +4,11 @@
 
 A set of tools to calculate dynamic equity for use in displaying the data in the form of tables and charts.
 
+Usage
+======
+
+See the comments in pieReport.js for how to use this module.
+
 How to Contribute!
 ============
 
@@ -28,6 +33,7 @@ How to submit pull requests:
 Change Log
 =========
 
+* 1.0.0 - Breaking changes, adding in C and N gradual changing
 * 0.0.1 - first commit!
 
 License

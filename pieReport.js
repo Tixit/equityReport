@@ -13,51 +13,63 @@ var moment = require('moment')
         // W - Work-rate (percentage of full-time) changed to on that date.
         // D - A number of dollars invested on that date.
         // note - Adds a text note about the change.
+// fromDate - the date equity started accruing
 // toDate - the date to calculate through (inclusive)
 // returns a list of objects defining the equity-variables in various date ranges. Each object has the properties:
     // from - The date, as a unix timestamp, of the beginning of the range (inclusive)
     // to - The date, as a unix timestamp, of the end of the date range (exclusive)
     // S - Salary equivalent
     // W - Work-rate (percentage of full-time)
-    // N - The company Need variable
+    // N - A 2-element array where the first element is where N starts in the date range, and the second element is where N ends in that date range
     // D - Dollars invested on the 'from' date
-exports.normalizePersonalEquity = function(N, person, toDate_) {
+exports.normalizePersonalEquity = function(N, person, fromDate_, toDate_) {
     var toDate = moment(toDate_)
+    var fromDate = moment(fromDate_)
 
     var normalizedPerson = personToArray(person, toDate)
     //console.log(JSON.stringify(normalizedPerson))
-    var NArray = NToArray(N, toDate)
+    var NArray = NToArray(N, fromDate, toDate)
 
     var curIndex = 0
     for(var n=0; n<NArray.length; n++) {
         var NData = NArray[n]
 
         while(curIndex < normalizedPerson.length) {
-            //console.log(NData.from.format('YYYY-MM-DD')+' - '+NData.to.format('YYYY-MM-DD')+'  '+normalizedPerson[curIndex].from.format('YYYY-MM-DD')+' - '+normalizedPerson[curIndex].to.format('YYYY-MM-DD'))
+            var curPerson = normalizedPerson[curIndex]
+
+            //console.log(NData.from.format('YYYY-MM-DD')+' - '+NData.to.format('YYYY-MM-DD')+'  '+curPerson.from.format('YYYY-MM-DD')+' - '+normalizedPerson[curIndex].to.format('YYYY-MM-DD'))
             // N range is before person range
-            if( ! NData.to.isAfter(normalizedPerson[curIndex].from)) {
+            if( ! NData.to.isAfter(curPerson.from)) {
                 break; // do nothing, continue on with the next N change
 
             // N range covers at least part of person range
-            } else if(!NData.from.isAfter(normalizedPerson[curIndex].from)) {
-                normalizedPerson[curIndex].N = NData.N
-
+            } else if(!NData.from.isAfter(curPerson.from)) {
                 // N range covers all of person range
-                if(!NData.to.isBefore(normalizedPerson[curIndex].to)) {
+                if(!NData.to.isBefore(curPerson.to)) {
+                    if(n+1 < NArray.length) {
+                        var nextNData = NArray[n+1]
+                    } else {
+                        var nextNData = NData
+                    }
+
+                    curPerson.N = calculateNRange(NData.from, NData.to, NData.N, nextNData.N, curPerson.from, curPerson.to)
+
                     curIndex++
                     continue; // there's more for this N to do
 
                 // N range covers part of person range
                 } else {
-                    var newEntry = copy(normalizedPerson[curIndex])
+                    var newEntry = copy(curPerson)
                     newEntry.D = 0 // don't duplicate the investment counted
+                    newEntry.C = 0 // don't duplicate the contracted investment
                     normalizedPerson.splice(curIndex+1,0,newEntry)
-                    normalizedPerson[curIndex].to = normalizedPerson[curIndex+1].from = NData.to
+                    curPerson.to = normalizedPerson[curIndex+1].from = NData.to
+                    curPerson.N = calculateNRange(NData.from, NData.to, NData.N, NArray[n+1].N, curPerson.from, curPerson.to)
                     curIndex++
                     break;
                 }
             } else {
-                throw new Error("unexpected: "+JSON.stringify(NData)+" - "+normalizedPerson[curIndex].from+' '+JSON.stringify(person))
+                throw new Error("unexpected: "+JSON.stringify(NData)+" - "+curPerson.from+' '+JSON.stringify(person))
             }
         }
     }
@@ -106,11 +118,20 @@ exports.newMemberTransform = function(normalizedPerson, startFraction, bump, mil
             var daysTilNextMilestone = nextMilestone - totalManDays
             var newDate = moment(dateItem.from).add(daysTilNextMilestone, 'days')
 
-            normalizedPerson.splice(n+1, 0, copy(dateItem))
-            dateItem.to = normalizedPerson[n+1].from = newDate.format('YYYY-MM-DD')
+            var originalFrom = moment(dateItem.from)
+            var originalTo = moment(dateItem.to)
+
+            var newItem = copy(dateItem)
+            dateItem.N = splitNRange(dateItem.N, originalFrom,originalTo, originalFrom,newDate)
+            newItem.N = splitNRange(newItem.N, originalFrom,originalTo, newDate,originalTo)
+            dateItem.to = newItem.from = newDate.format('YYYY-MM-DD')
             dateItem.S = Math.round(dateItem.S * currentFraction)
             if(dateItem.D !== undefined)
-                normalizedPerson[n+1].D = 0
+                newItem.D = 0
+            if(dateItem.C !== undefined)
+                newItem.C = 0
+
+            normalizedPerson.splice(n+1, 0, newItem)
 
             currentFraction += fractionIncreasePerMilestone
 
@@ -166,8 +187,7 @@ exports.sumShares = function(normalizedEquity, _from, _to) {
                 itemTo = to
             }
 
-            var days = subtractMoments(itemTo, itemFrom)
-            totalShares += calculateShares(days, item, includeInvestment)
+            totalShares += calculateShares(itemFrom,itemTo, item, includeInvestment)
         }
     }
 
@@ -224,9 +244,8 @@ exports.summary = function(normalizedEquity, totals) {
     for(var n=0; n<normalizedEquity.length; n++) {
         var item = normalizedEquity[n]
         var start = moment(item.from), end = moment(item.to)
-        var days = subtractMoments(end,start)
 
-        var shares = calculateShares(days, item, true)
+        var shares = calculateShares(start,end, item, true)
         runningTotal+= shares
         companyRunningTotal += exports.sumShares(totals, companyTotaledTil, item.to)
         companyTotaledTil = item.to
@@ -241,16 +260,29 @@ exports.summary = function(normalizedEquity, totals) {
 }
 
 
-function calculateShares(days, data, includeDollars) {
-    if(includeDollars === undefined) includeDollars = true
+var calculateShares = exports.calculateShares = function(from, to, data, includeDollarsAndContractedEquity) {
+    from = moment(from), to = moment(to)
 
-    var N = data.N
+    if(includeDollarsAndContractedEquity === undefined) includeDollarsAndContractedEquity = true
+
+    var startDate = moment(data.from), endDate = moment(data.to)
+    var daysInRange = endDate.diff(startDate,'days')
+    var slope = (data.N[1]-data.N[0])/daysInRange
+
+    var startN = data.N[0]+slope*from.diff(startDate,'days')
+    var endN = data.N[0]+slope*(to.diff(startDate,'days')-1)
+    var daysInNewRange = to.diff(from,'days')
+    var Nmultiplier = daysInNewRange*(endN+startN)/2
+
     var S = data.S
     var W = data.W
-    if(includeDollars) var D = data.D
-    else               var D = 0
+    if(includeDollarsAndContractedEquity) {
+        var C = data.C, D = data.D
+    } else {
+        var C = 0, D = 0
+    }
 
-    return N*(days*W*S/365 + D/0.6)
+    return Nmultiplier*W*S/365 + data.N[0]*(C + D/0.6)
 }
 
 // merges two people into an average
@@ -293,13 +325,15 @@ function mergePeople(a,b) {
             // start at same time
             } else {
 
-                var D = 0
+                var D=0, C=0
                 if(!aDollarsCounted) {
                     aDollarsCounted = true
+                    C += a[an].C
                     D += a[an].D
                 }
                 if(!bDollarsCounted) {
                     bDollarsCounted = true
+                    C += b[bn].C
                     D += b[bn].D
                 }
 
@@ -324,10 +358,10 @@ function mergePeople(a,b) {
                 // combine parts that overlap
                 var totalItem = {
                     from: curTime.format('YYYY-MM-DD'), to: overlapEnd.format('YYYY-MM-DD'),
-                    N: a[an].N,               // should be same for both a and b, so this is arbitrary
+                    N: splitNRange(a[an].N, aFrom,aTo, curTime,overlapEnd),             // should be same for both 'a' and 'b', so choosing 'a' is arbitrary
                     S: a[an].S*(a[an].W/totalW) + b[bn].S*(b[bn].W/totalW),   // weighted average
                     W: a[an].W+b[bn].W,   // total
-                    D: D,
+                    C:C, D: D,
                 }
 
                 results.push(totalItem)
@@ -356,8 +390,9 @@ function mergePeople(a,b) {
 
     function overlappingItem(x, y) {
         var itemBefore = copy(x)
-        x.D = 0 // don't duplicate the investment (note that this mutates the input, todo: fix this)
+        x.D=0;x.C=0 // don't duplicate the investment (note that this mutates the input, todo: fix this)
         //itemBefore.D = 0 // D is added in elsewhere
+        itemBefore.N = splitNRange(itemBefore.N, itemBefore.from,itemBefore.from, curTime, moment(y.from))
         itemBefore.from = curTime.format('YYYY-MM-DD')
         itemBefore.to = y.from
         results.push(itemBefore)
@@ -365,13 +400,19 @@ function mergePeople(a,b) {
     }
 }
 
-function NToArray(N, endTime) {
+function NToArray(N, fromTime, endTime) {
     var result = []
     for(var date in N) {
         result.push({from: moment(date), N: N[date]})
     }
 
     result = result.sort(dateSortFn)
+
+    if(result[0].from.isBefore(fromTime)) {
+        throw new Error("N has values before the given start date - can't calculate N")
+    }
+
+    result.unshift({from:fromTime, N:50*result[0].N})
 
     for(var n=0; n<result.length; n++) {
         if(n+1<result.length) {
@@ -384,13 +425,28 @@ function NToArray(N, endTime) {
     return result
 }
 
+function calculateN(tprev, tnext, Nprev, Nnext, x) {
+    return Nprev - x.diff(tprev,'days')*(Nprev - Nnext)/tnext.diff(tprev,'days')
+}
+function calculateNRange(tprev, tnext, Nprev, Nnext, from, to) {
+    return [calculateN(tprev,tnext, Nprev,Nnext, from), calculateN(tprev,tnext, Nprev,Nnext, to)]
+}
+
+// returns the range of N with a later new start date, an earlier new end date, or both
+function splitNRange(curNrange, curFrom, curTo, newFrom, newTo) {
+    var aDuration = curTo.diff(curFrom,'days')
+    var Nslope = (curNrange[1]-curNrange[0])/aDuration
+
+    return [curNrange[0]+Nslope*newFrom.diff(curFrom,'days'), curNrange[0]+Nslope*newTo.diff(curFrom,'days')]
+}
+
 // turns a persons changes into an array of changes sorted by date
 function personToArray(person, endTime) {
     var result = []
     var curValues = {S: 0, W: 0}
     for(var date in person) {
         var changes = person[date]
-        result.push({from: moment(date), S: newValue(changes, 'S'), W: newValue(changes, 'W'), D: newValue(changes, 'D')})
+        result.push({from: moment(date), S: newValue(changes, 'S'), W: newValue(changes, 'W'), D: newValue(changes, 'D'), C: newValue(changes, 'C')})
     }
 
     result.sort(dateSortFn)
@@ -408,6 +464,8 @@ function personToArray(person, endTime) {
     function newValue(changes, property) {
         if(property === 'D')
             return changes.D || 0
+        else if(property === 'C')
+            return changes.C || 0
         else {
             if(changes[property] !== undefined) {
                 var newValue = changes[property]
