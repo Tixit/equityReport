@@ -1,5 +1,5 @@
 {"name":"pieReport",
- "version":"1.0.0",
+ "version":"1.0.1",
  "main":"pieReport.js",
  "description": "Data processing for dynamic equity system .",
  "keywords": [

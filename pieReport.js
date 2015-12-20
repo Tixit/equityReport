@@ -392,7 +392,7 @@ function mergePeople(a,b) {
         var itemBefore = copy(x)
         x.D=0;x.C=0 // don't duplicate the investment (note that this mutates the input, todo: fix this)
         //itemBefore.D = 0 // D is added in elsewhere
-        itemBefore.N = splitNRange(itemBefore.N, itemBefore.from,itemBefore.from, curTime, moment(y.from))
+        itemBefore.N = splitNRange(itemBefore.N, itemBefore.from,itemBefore.to, curTime, moment(y.from))
         itemBefore.from = curTime.format('YYYY-MM-DD')
         itemBefore.to = y.from
         results.push(itemBefore)
