@@ -63,7 +63,7 @@ Unit.test("Testing pieReport", function() {
         }
         var personOne = {
             '2015-10-01': {S:100*1000, W:1},    // nonexistent in personTwo
-            '2015-10-11': {W:.5},               // identical range in personTwo
+            '2015-10-10': {W:.5},               // identical range in personTwo
             '2015-10-21': {D: 1000},
             '2015-11-11': {W: 1, C:50}
         }
@@ -84,11 +84,11 @@ Unit.test("Testing pieReport", function() {
 
         var result = pie.total([person1, person2])
 
-        this.eq(result.length, 6)
+        this.eq(result.length, 7)
 
-        var N0 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-01", "2015-10-11")
+        var N0 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-01", "2015-10-10")
         var index = 0, expected = {
-            from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, N: N0, D:0, C:0
+            from: "2015-10-01", to: "2015-10-10", S: 100*1000, W:1, N: N0, D:0, C:0
         }
         this.ok(equal(result[index], expected),result[index], expected);index++
 
@@ -96,12 +96,14 @@ Unit.test("Testing pieReport", function() {
 //        var itemEquitySum =  100*(100*k/365*0.5*10 + 50*k/365*1*10)
 //        this.ok(itemEquitySum -.0001 <= itemEquityTotal&&itemEquityTotal <= itemEquitySum +.0001) // it should be really close
 
+        var N0p5 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-10", "2015-10-11")
         var N1 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-11", "2015-10-21")
         var N2 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-21", "2015-11-01")
         var N3 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-11-01", "2015-11-06")
         var N4 = calculateNRange('2015-11-06', '2016-06-01', 1, .5, "2015-11-06", "2015-11-11")
         var N5 = calculateNRange('2015-11-06', '2016-06-01', 1, .5, "2015-11-11", "2015-11-15")
 
+        expected={from: "2015-10-10", to: "2015-10-11", S: 100*1000, W:.5, N: N0p5, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
         expected={from: "2015-10-11", to: "2015-10-21", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, N: N1, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
         this.ok(aproxEq(N2[0],result[index].N[0]), N2[0],result[index].N[0])
         this.ok(aproxEq(N2[1],result[index].N[1]), N2[1],result[index].N[1])
@@ -300,6 +302,10 @@ Unit.test("Testing pieReport", function() {
                     t.ok(false)
                 }
             })
+        })
+
+        this.test("total - Object 2015-02-25 has no method 'diff' in splitRange", function() {
+
         })
     })
 
