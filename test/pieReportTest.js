@@ -15,24 +15,18 @@ Unit.test("Testing pieReport", function() {
     //*
 
     this.test("normalizePersonalEquity", function() {
-        var N = {
-            '2016-06-01': 2
-        }
         var data = {
             '2015-10-01': {S:100*1000, W:1}
         }
 
-        var result = pie.normalizePersonalEquity(N, data, '2015-10-01', '2015-10-15')
-        var N = calculateNRange('2015-10-01', '2016-06-01', 100, 2, '2015-10-01', "2015-10-15")
+        var result = pie.normalizePersonalEquity(data, '2015-10-01', '2015-10-15')
+        //var N = calculateNRange('2015-10-01', '2016-06-01', 100, 2, '2015-10-01', "2015-10-15")
         var expected = [
-            {from: "2015-10-01", to: '2015-10-15', S: 100*1000, W:1, N: N, C:0, D:0}  // N starts 50 times higher than the first change in N
+            {from: "2015-10-01", to: '2015-10-15', S: 100*1000, W:1, C:0, D:0}
         ]
         this.ok(equal(result, expected), result, expected)
 
 
-        N = {
-            '2015-10-25': 1
-        }
         data = {
             '2015-10-01': {S:100*1000, W:1},
             '2015-10-11': {W:.5},
@@ -40,18 +34,14 @@ Unit.test("Testing pieReport", function() {
             '2015-11-11': {D: 1000}
         }
 
-        result = pie.normalizePersonalEquity(N, data, '2015-09-01', '2015-11-15')
+        result = pie.normalizePersonalEquity(data, '2015-09-01', '2015-11-15')
         expected = [
-            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, D:0, C:0,
-                N: calculateNRange('2015-09-01', '2015-10-25', 50, 1, "2015-10-01", "2015-10-11")},
-            {from: "2015-10-11", to: "2015-10-21", S: 100*1000, W:.5, D:0, C:0,
-                N: calculateNRange('2015-09-01', '2015-10-25', 50, 1, "2015-10-11", "2015-10-21")},
+            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, D:0, C:0},
+            {from: "2015-10-11", to: "2015-10-21", S: 100*1000, W:.5, D:0, C:0},
 
-            {from: "2015-10-21", to: "2015-10-25", S: 100*1000, W:.5, D:1000, C:900,
-                N: calculateNRange('2015-09-01', '2015-10-25', 50, 1, "2015-10-21", "2015-10-25")},
-            {from: "2015-10-25", to: "2015-11-11", S: 100*1000, W:.5, D:0, C:0, N: [1,1]},
+            {from: "2015-10-21", to: "2015-11-11", S: 100*1000, W:.5, D:1000, C:900},
 
-            {from: "2015-11-11", to: "2015-11-15", S: 100*1000, W:.5, D:1000, C:0, N: [1,1]}
+            {from: "2015-11-11", to: "2015-11-15", S: 100*1000, W:.5, D:1000, C:0}
         ]
         this.ok(equal(result, expected), result, expected)
     })
@@ -76,19 +66,19 @@ Unit.test("Testing pieReport", function() {
 
         // 10-01 - 10-11, 10-11 - 10-21, 10-21 - 11-01, 11-01 - 11-06, 11-06 - 11-11, 11-11 - 11-15
 
-        var person1 = pie.normalizePersonalEquity(N, personOne, '2015-10-01', '2015-11-15')
-        var person2 = pie.normalizePersonalEquity(N, personTwo, '2015-10-01', '2015-11-15')
+        var person1 = pie.normalizePersonalEquity(personOne, '2015-10-01', '2015-11-15')
+        var person2 = pie.normalizePersonalEquity(personTwo, '2015-10-01', '2015-11-15')
 
 //        this.log(person1)
 //        this.log(person2)
 
         var result = pie.total([person1, person2])
 
-        this.eq(result.length, 7)
+        this.eq(result.length, 6)
 
-        var N0 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-01", "2015-10-10")
+//        var N0 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-01", "2015-10-10")
         var index = 0, expected = {
-            from: "2015-10-01", to: "2015-10-10", S: 100*1000, W:1, N: N0, D:0, C:0
+            from: "2015-10-01", to: "2015-10-10", S: 100*1000, W:1, /*N: N0,*/ D:0, C:0
         }
         this.ok(equal(result[index], expected),result[index], expected);index++
 
@@ -96,69 +86,75 @@ Unit.test("Testing pieReport", function() {
 //        var itemEquitySum =  100*(100*k/365*0.5*10 + 50*k/365*1*10)
 //        this.ok(itemEquitySum -.0001 <= itemEquityTotal&&itemEquityTotal <= itemEquitySum +.0001) // it should be really close
 
-        var N0p5 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-10", "2015-10-11")
-        var N1 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-11", "2015-10-21")
-        var N2 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-21", "2015-11-01")
-        var N3 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-11-01", "2015-11-06")
-        var N4 = calculateNRange('2015-11-06', '2016-06-01', 1, .5, "2015-11-06", "2015-11-11")
-        var N5 = calculateNRange('2015-11-06', '2016-06-01', 1, .5, "2015-11-11", "2015-11-15")
+//        var N0p5 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-10", "2015-10-11")
+//        var N1 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-11", "2015-10-21")
+//        var N2 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-10-21", "2015-11-01")
+//        var N3 = calculateNRange('2015-10-01', '2015-11-06', 50, 1, "2015-11-01", "2015-11-06")
+//        var N4 = calculateNRange('2015-11-06', '2016-06-01', 1, .5, "2015-11-06", "2015-11-11")
+//        var N5 = calculateNRange('2015-11-06', '2016-06-01', 1, .5, "2015-11-11", "2015-11-15")
 
-        expected={from: "2015-10-10", to: "2015-10-11", S: 100*1000, W:.5, N: N0p5, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
-        expected={from: "2015-10-11", to: "2015-10-21", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, N: N1, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
-        this.ok(aproxEq(N2[0],result[index].N[0]), N2[0],result[index].N[0])
-        this.ok(aproxEq(N2[1],result[index].N[1]), N2[1],result[index].N[1])
-        expected={from: "2015-10-21", to: "2015-11-01", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, N: result[index].N, D:2000,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
+        expected={from: "2015-10-10", to: "2015-10-11", S: 100*1000, W:.5, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
+        expected={from: "2015-10-11", to: "2015-10-21", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
+        //this.ok(aproxEq(N2[0],result[index].N[0]), N2[0],result[index].N[0])
+        //this.ok(aproxEq(N2[1],result[index].N[1]), N2[1],result[index].N[1])
+        expected={from: "2015-10-21", to: "2015-11-01", S: 100*k*(0.5/1.5) + 50*k*(1/1.5), W:1.5, D:2000,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
 
-        this.ok(aproxEq(N3[0],result[index].N[0]), N3[0],result[index].N[0])
-        this.ok(aproxEq(N3[1],result[index].N[1]), N3[1],result[index].N[1])
-        expected={from: "2015-11-01", to: "2015-11-06", S: 100*k*(0.5/0.75) + 50*k*(0.25/0.75), W:0.75, N: result[index].N, D:0,C:900};this.ok(equal(result[index], expected),result[index],expected);index++
-        expected={from: "2015-11-06", to: "2015-11-11", S: 100*k*(0.5/0.75) + 50*k*(0.25/0.75), W:0.75, N: N4, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
-        expected={from: "2015-11-11", to: "2015-11-15", S: 100*k*(1/2) + 50*k*(1/2), W:2, N: N5, D:0,C:100};this.ok(equal(result[index], expected),result[index],expected);index++
+//        this.ok(aproxEq(N3[0],result[index].N[0]), N3[0],result[index].N[0])
+//        this.ok(aproxEq(N3[1],result[index].N[1]), N3[1],result[index].N[1])
+        expected={from: "2015-11-01", to: "2015-11-11", S: 100*k*(0.5/0.75) + 50*k*(0.25/0.75), W:0.75, D:0,C:900};this.ok(equal(result[index], expected),result[index],expected);index++
+        //expected={from: "2015-11-06", to: "2015-11-11", S: 100*k*(0.5/0.75) + 50*k*(0.25/0.75), W:0.75, D:0,C:0};this.ok(equal(result[index], expected),result[index],expected);index++
+        expected={from: "2015-11-11", to: "2015-11-15", S: 100*k*(1/2) + 50*k*(1/2), W:2, D:0,C:100};this.ok(equal(result[index], expected),result[index],expected);index++
     })
 
     this.test("newMemberTransform", function() {
         var normalizedMemberData = [
-            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, N: [100,90], D:0, C:0},
-            {from: "2015-10-11", to: "2015-10-21", S: 100*1000, W:.5, N: [90,80], D:0, C:0},
-            {from: "2015-10-21", to: "2015-10-31", S: 100*1000, W:.5, N: [80,70], D:1000, C:900},
-            {from: "2015-10-31", to: "2015-11-08", S: 100*1000, W:.5, N: [70,68], D:0, C:900},
-            {from: "2015-11-08", to: "2015-11-15", S: 100*1000, W:.5, N: [68,68], D:1000, C:0}
+            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, D:0, C:0},
+            {from: "2015-10-11", to: "2015-10-21", S: 100*1000, W:.5, D:0, C:0},
+            {from: "2015-10-21", to: "2015-10-31", S: 100*1000, W:.5, D:1000, C:900},
+            {from: "2015-10-31", to: "2015-11-08", S: 100*1000, W:.5, D:0, C:900},
+            {from: "2015-11-08", to: "2015-11-15", S: 100*1000, W:.5, D:1000, C:0}
         ]
 
         var newData = pie.newMemberTransform(normalizedMemberData, .5, .1, 5)
         this.eq(newData.length, 7)
-        this.ok(equal(newData[0], {from: "2015-10-01", to: "2015-10-06", S: 100*1000*.5, W:1, N: [100,95], D:0, C:0}))
-        this.ok(equal(newData[1], {from: "2015-10-06", to: "2015-10-11", S: 100*1000*.6, W:1, N: [95,90], D:0, C:0}))
-        this.ok(equal(newData[2], {from: "2015-10-11", to: "2015-10-21", S: 100*1000*.7, W:.5, N: [90,80], D:0, C:0}))
-        this.ok(equal(newData[3], {from: "2015-10-21", to: "2015-10-31", S: 100*1000*.8, W:.5, N: [80,70], D:1000, C:900}))
-        this.ok(equal(newData[4], {from: "2015-10-31", to: "2015-11-08", S: 100*1000*.9, W:.5, N: [70,68], D:0, C:900}))
-        this.ok(equal(newData[5], {from: "2015-11-08", to: "2015-11-09", S: 100*1000*.9, W:.5, N: [68,68], D:1000, C:0}))
-        this.ok(equal(newData[6], {from: "2015-11-09", to: "2015-11-15", S: 100*1000, W:.5, N: [68,68], D:0, C:0}))
+        this.ok(equal(newData[0], {from: "2015-10-01", to: "2015-10-06", S: 100*1000*.5, W:1,  D:0, C:0}))
+        this.ok(equal(newData[1], {from: "2015-10-06", to: "2015-10-11", S: 100*1000*.6, W:1, D:0, C:0}))
+        this.ok(equal(newData[2], {from: "2015-10-11", to: "2015-10-21", S: 100*1000*.7, W:.5, D:0, C:0}))
+        this.ok(equal(newData[3], {from: "2015-10-21", to: "2015-10-31", S: 100*1000*.8, W:.5, D:1000, C:900}))
+        this.ok(equal(newData[4], {from: "2015-10-31", to: "2015-11-08", S: 100*1000*.9, W:.5, D:0, C:900}))
+        this.ok(equal(newData[5], {from: "2015-11-08", to: "2015-11-09", S: 100*1000*.9, W:.5, D:1000, C:0}))
+        this.ok(equal(newData[6], {from: "2015-11-09", to: "2015-11-15", S: 100*1000, W:.5,    D:0, C:0}))
         //this.log(newData)
 
     })
 
     this.test("calculateShares", function(t) {
-        var item = {from: "2015-10-21", to: "2015-10-31", N:[11, 1], W:.5, C: 11, D:12, S:100}
+        var item = {from: "2015-10-21", to: "2015-10-31", W:.5, C: 11, D:12, S:100}
 
-        var result = pie.calculateShares("2015-10-21", "2015-10-31", item, true)
+        var result = pie.calculateShares("2015-10-21", "2015-10-31", item, 11, (11+2)/2, true)
         this.eq(result, (11+10+9+8+7+6+5+4+3+2)*(.5*100/365) + 11*(11 + 12 /0.6))
 
-        result = pie.calculateShares("2015-10-26", "2015-10-30", item, false)
+        result = pie.calculateShares("2015-10-26", "2015-10-30", item, 6, (6+3)/2, false)
         this.eq(result, (6+5+4+3) * (.5*100/365))
     })
 
     this.test("sumShares", function() {
+        var N = {
+            "2015-10-01": 100,
+            "2015-11-15": 55
+        }
+
         var data = [
-            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, N: [100,90], D:0, C:0},
-            {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5, N: [90,80], D:0, C:0},
-            {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5, N: [80,69], D:2000, C:0},
-            {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, N: [69,64], D:0, C:9000},
-            {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, N: [64,59], D:0, C:0},
-            {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2, N: [59,55], D:0, C:0}
+            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1, D:0, C:0},
+            {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5, D:0, C:0},
+            {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5, D:2000, C:0},
+            {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, D:0, C:9000},
+            {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, D:0, C:0},
+            {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2, D:0, C:0}
         ]
 
-        var result = pie.sumShares(data, '2015-10-05', '2015-11-13')
+        var Narray = pie.NToArray(N, "2015-09-29", "2015-11-15")
+        var result = pie.sumShares(data, Narray, '2015-10-05', '2015-11-13')
 
         this.eq(result,
            //Salary/365 *      N   * days *W   + N * D   /.6
@@ -172,12 +168,12 @@ Unit.test("Testing pieReport", function() {
 
     this.test("sumManHours", function() {
         var data = [
-            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1,   N: [100,90], D:0, C:0},
-            {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5,  N: [90, 80], D:0, C:0},
-            {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5,  N: [80, 69], D:2000, C:0},
-            {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, N: [69, 64], D:0, C:900},
-            {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, N: [64, 59], D:0, C:0},
-            {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2,    N: [59, 55], D:0, C:0}
+            {from: "2015-10-01", to: "2015-10-11", S: 100*1000, W:1,   D:0, C:0},
+            {from: "2015-10-11", to: "2015-10-21", S: 75*1000, W:1.5,  D:0, C:0},
+            {from: "2015-10-21", to: "2015-11-01", S: 75*1000, W:1.5,  D:2000, C:0},
+            {from: "2015-11-01", to: "2015-11-06", S: 75*1000, W:0.75, D:0, C:900},
+            {from: "2015-11-06", to: "2015-11-11", S: 75*1000, W:0.75, D:0, C:0},
+            {from: "2015-11-11", to: "2015-11-15", S: 75*1000, W:2,    D:0, C:0}
         ]
 
         var result = pie.sumManHours(data, '2015-10-05', '2015-11-13')
@@ -204,14 +200,21 @@ Unit.test("Testing pieReport", function() {
 
         // 10-01 - 10-11, 10-11 - 10-21, 10-21 - 11-01, 11-01 - 11-06, 11-06 - 11-11, 11-11 - 11-15
 
-        var person1 = pie.normalizePersonalEquity(N, personOne, '2015-10-01', '2015-11-15')
-        var person2 = pie.normalizePersonalEquity(N, personTwo, '2015-10-01', '2015-11-15')
+        var person1 = pie.normalizePersonalEquity(personOne, '2015-10-01', '2015-11-15')
+        var person2 = pie.normalizePersonalEquity(personTwo, '2015-10-01', '2015-11-15')
         var totals = pie.total([person1, person2])
 
-        var result = pie.summary(person1, totals)
+        var Narray = pie.NToArray(N, '2015-10-01', '2015-11-11')
+        var result = pie.summary(person1, totals, Narray)
 
         var Nat = function(at) {
-            return calculateN("2015-10-01",'2015-11-06',50,1,at)
+            if(moment(at).isBefore('2015-11-06')) {
+                return calculateN("2015-10-01",'2015-11-06',50,1,at)
+            } else if(moment(at).isBefore('2016-06-01')) {
+                return calculateN('2015-11-06','2016-06-01',N['2015-11-06'],N['2016-06-01'],at)
+            } else {
+                return N['2016-06-01']
+            }
         }
         var averageN = function(from,to) {
             return (Nat(from)+Nat(to))/2
@@ -235,7 +238,7 @@ Unit.test("Testing pieReport", function() {
             return calculateN("2015-11-06",'2016-06-01',1,.5,at)
         }
 
-        var N1106to1111 = averageN("2015-11-06","2015-11-10")
+        var N1106to1111 = averageN("2015-11-06","2015-11-10") //0.9951923076923077
         var total1D = total1C + 100*k/365*N1106to1111*5*.5, total2_1106to1111 = total2_1021to1106 + 50*k/365*N1106to1111*5*.25
         var fraction1D = total1D/(total1D+total2_1106to1111)
         //var actualFraction1D = 0.6311130781146269
@@ -267,7 +270,7 @@ Unit.test("Testing pieReport", function() {
         item({from:"2015-11-11",to:"2015-11-15", S:100*k,W:1, D:0,C:0, N:calculateNRange("2015-11-06",'2016-06-01',1,.5,"2015-11-11","2015-11-15"),
             runningTotal:total1E, runningFraction: fraction1E})
 
-        result = pie.summary(person2, totals)
+        result = pie.summary(person2, totals,Narray)
         this.eq(result.length, 5)
         index = 0
         item({from:"2015-10-11",to:"2015-10-21", S:50*k,W:1, D:0,C:0, N:calculateNRange("2015-10-01",'2015-11-06',50,1,"2015-10-11","2015-10-21"),
@@ -411,7 +414,7 @@ function calculateN(tprev, tnext, Nprev, Nnext, x) {
 }
 
 function calculateNRange(tprev, tnext, Nprev, Nnext, from, to) {
-    return [calculateN(tprev,tnext, Nprev,Nnext, from), calculateN(tprev,tnext, Nprev,Nnext, to)]
+    return [calculateN(tprev,tnext, Nprev,Nnext, from), calculateN(tprev,tnext, Nprev,Nnext, moment(to).clone().subtract(1, 'days'))]
 }
 
 function aproxEq(a,b, closeness) {
