@@ -371,7 +371,7 @@ function mergePeople(a,b) {
                     from: curTime.format('YYYY-MM-DD'), to: overlapEnd.format('YYYY-MM-DD'),
                     //N: splitNRange(a[an].N, aFrom,aTo, curTime,overlapEnd),             // should be same for both 'a' and 'b', so choosing 'a' is arbitrary
                     S: a[an].S*(a[an].W/totalW) + b[bn].S*(b[bn].W/totalW),   // weighted average
-                    W: a[an].W+b[bn].W,   // total
+                    W: totalW,   // total
                     C:C, D: D,
                 }
 
@@ -413,7 +413,8 @@ function mergePeople(a,b) {
 
 // returns an array where each object looks like:
     // {from:_, to:_, N:_} and to is non-inclusive
-var NToArray = exports.NToArray = function(N, fromTime, endTime) {
+// initialNMultiplier - The multiplier for how large N is in comparison to the first investment
+var NToArray = exports.NToArray = function(N, initialNMultiplier, fromTime, endTime) {
     var result = []
     for(var date in N) {
         result.push({from: moment(date), N: N[date]})
@@ -425,7 +426,7 @@ var NToArray = exports.NToArray = function(N, fromTime, endTime) {
         throw new Error("N has values before the given start date - can't calculate N")
     }
 
-    result.unshift({from:moment(fromTime), N:50*result[0].N})
+    result.unshift({from:moment(fromTime), N:initialNMultiplier*result[0].N})
 
     for(var n=0; n<result.length; n++) {
         if(n+1<result.length) {
